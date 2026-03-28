@@ -1,0 +1,63 @@
+# The workflow_dispatch event is what creates the "Run workflow" button
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version Tag (e.g., v1.0.0)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Brief release notes'
+        required: false
+        type: string
+
+# Explicitly grant permission to create a release
+permissions:
+  contents: write
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+    name: Build and Publish Release
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 1. Standard Build Environment Setup
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      # 2. Compile the Project (Using your existing CMake setup)
+      - name: Generate CMake project
+        run: cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -S . -B build -G Ninja
+
+      - name: Build 64bit Release DLL
+        run: cmake --build ./build --config Release --target YimMenuV2 --
+
+      # 3. Generate SHA256 Checksum for security
+      - name: Generate Checksum
+        id: checksum
+        run: |
+          sha256sum build/YimMenuV2.dll > build/sha256.checksum
+          echo "hash=$(cat build/sha256.checksum)" >> $env:GITHUB_OUTPUT
+
+      # 4. Create the GitHub Release and upload the DLL
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          body: |
+            ${{ github.event.inputs.release_notes }}
+            
+            **Build Checksum (SHA256):**
+            ```
+            ${{ steps.checksum.outputs.hash }}
+            ```
+          files: |
+            build/YimMenuV2.dll
