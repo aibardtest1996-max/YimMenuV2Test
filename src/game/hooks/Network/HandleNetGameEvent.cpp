@@ -28,8 +28,8 @@ namespace YimMenu::Hooks
 	{
 		if (*(int16_t*)&event.m_InteriorIndex < -1)
 		{
-			LOG(INFO) << "blocked invalid interior crash from " << player.GetName();
-			return true;
+			LOGF(INFO, "Allowed (previously blocked) invalid interior crash from {}", player.GetName());
+			return false; // NOLINT(readability-simplify-boolean-expr)
 		}
 
 		if (event.m_IsInvisible)
@@ -38,15 +38,15 @@ namespace YimMenu::Hooks
 			if (event.m_CameraShake > 0.0f && dist <= 30.0f)
 			{
 				// Camera shake
-				LOGF(WARNING, "Blocked EXPLOSION_EVENT from {} since m_CameraShake > 0.0f", player.GetName());
-				return true;
+				LOGF(INFO, "Allowed (previously blocked) EXPLOSION_EVENT (CameraShake) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			if (event.m_DamageScale > 0.0f && dist <= 10.0f)
 			{
 				// Ragdoll
-				LOGF(WARNING, "Blocked EXPLOSION_EVENT from {} since m_DamageScale > 0.0f", player.GetName());
-				return true;
+				LOGF(INFO, "Allowed (previously blocked) EXPLOSION_EVENT (DamageScale/Ragdoll) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
 			}
 		}
 
@@ -64,21 +64,33 @@ namespace YimMenu::Hooks
 		if (std::ranges::contains(blocked_ref_hashes, event.m_RefHash)
 		    || std::ranges::contains(blocked_sound_hashes, event.m_SoundHash)
 		    || std::ranges::contains(blocked_script_hashes, event.m_ScriptId.m_Hash))
-			return true;
+		{
+			LOGF(INFO, "Allowed (previously blocked) PlaySoundEvent from {}", player.GetName());
+			return false; // NOLINT(readability-simplify-boolean-expr)
+		}
 
 		switch (event.m_SoundHash)
 		{
 		case "DLC_XM_Explosions_Orbital_Cannon"_J:
 		{
 			if (event.m_IsEntity)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) Orbital Cannon Sound (Entity) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			if (event.m_ScriptId.m_Hash != "am_mp_defunct_base"_J && event.m_ScriptId.m_Hash != "am_mp_orbital_cannon"_J
 			    && event.m_ScriptId.m_Hash != "fm_mission_controller_2020"_J && event.m_ScriptId.m_Hash != "fm_mission_controller"_J)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) Orbital Cannon Sound (Script) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			if (!GlobalPlayerBD::Get()->Entries[player.GetId()].OrbitalBitset.IsSet(eOrbitalBitset::kOrbitalCannonActive))
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) Orbital Cannon Sound (Not Active) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			break;
 		}
@@ -90,30 +102,48 @@ namespace YimMenu::Hooks
 		case "DLC_Biker_Sell_Postman_Sounds"_J:
 		{
 			if (event.m_IsEntity)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) Biker Sound from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			if (event.m_ScriptId.m_Hash != "gb_biker_contraband_sell"_J)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) Biker Sound (Script) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			break;
 		}
 		case "DLC_AW_General_Sounds"_J:
 		{
 			if (event.m_SoundHash != "Airhorn_Blast_Long"_J)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) AW Sound from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			if (event.m_ScriptId.m_Hash != "gb_casino_heist"_J)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) AW Sound (Script) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			break;
 		}
 		case "GTAO_FM_Events_Soundset"_J:
 		{
 			if (!event.m_IsEntity)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) FM Event Sound from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			if (event.m_SoundHash != "Explosion_Countdown"_J)
-				return true;
+			{
+				LOGF(INFO, "Allowed (previously blocked) FM Event Sound (Hash) from {}", player.GetName());
+				return false; // NOLINT(readability-simplify-boolean-expr)
+			}
 
 			break;
 		}
@@ -124,6 +154,8 @@ namespace YimMenu::Hooks
 
 	bool ShouldAllowNetEvent(Player player, uint16_t event_id, rage::datBitBuffer& buffer)
 	{
+		LOGF(INFO, "Event {} from {}", event_id, player.GetName());
+
 		switch (static_cast<rage::netGameEvent::Type>(event_id))
 		{
 		case rage::netGameEvent::Type::REQUEST_CONTROL_EVENT:
@@ -138,8 +170,8 @@ namespace YimMenu::Hooks
 
 			if (event.m_WeaponType == "WEAPON_TRANQUILIZER"_J)
 			{
-				LOGF(WARNING, "Blocked WEAPON_DAMAGE_EVENT from {} with m_WeaponType == WEAPON_TRANQUILIZER", player.GetName());
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) WEAPON_DAMAGE_EVENT from {} with m_WeaponType == WEAPON_TRANQUILIZER", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -151,7 +183,7 @@ namespace YimMenu::Hooks
 
 			if (ScanExplosionEvent(event, player))
 			{
-				return false;
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -166,8 +198,8 @@ namespace YimMenu::Hooks
 			if (self_veh && self_veh.GetNetworkObjectId() == veh_id && sender_veh && sender_veh.GetNetworkObjectId() != veh_id)
 			{
 				// Vehicle takeover
-				LOGF(WARNING, "Blocked CHANGE_RADIO_STATION_EVENT on our local vehicle from {}", player.GetName());
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) CHANGE_RADIO_STATION_EVENT on our local vehicle from {}", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -175,18 +207,18 @@ namespace YimMenu::Hooks
 		case rage::netGameEvent::Type::DOOR_BREAK_EVENT:
 		{
 			// never used for legitimate reasons
-			LOGF(WARNING, "Blocked DOOR_BREAK_EVENT from {}", player.GetName());
-			return false;
+			LOGF(INFO, "Allowed (previously blocked) DOOR_BREAK_EVENT from {}", player.GetName());
+			return true; // NOLINT(readability-simplify-boolean-expr)
 		}
 		case rage::netGameEvent::Type::SCRIPTED_GAME_EVENT:
 		{
 			CScriptedGameEvent event;
 
 			if (!event.Deserialize(buffer))
-				return false;
+				return true; // NOLINT(readability-simplify-boolean-expr)
 
 			if (!Network::HandleScriptedGameEvent(player, event))
-				return false;
+				return true; // NOLINT(readability-simplify-boolean-expr)
 
 			break;
 		}
@@ -206,15 +238,15 @@ namespace YimMenu::Hooks
 				if (pop_group == 0 && (percentage == 0 || percentage == 103))
 				{
 					// pop group override crash
-					LOGF(WARNING, "Blocked SCRIPT_WORLD_STATE_EVENT of type PopGroupOverride with invalid params from {}", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_WORLD_STATE_EVENT of type PopGroupOverride with invalid params from {}", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 			}
 			else if (type == CScriptWorldStateEvent::Type::PopMultiplierArea && !NETWORK::NETWORK_IS_ACTIVITY_SESSION())
 			{
 				// Stop traffic
-				LOGF(WARNING, "Blocked SCRIPT_WORLD_STATE_EVENT of type PopMultiplierArea from {}", player.GetName());
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) SCRIPT_WORLD_STATE_EVENT of type PopMultiplierArea from {}", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -233,23 +265,23 @@ namespace YimMenu::Hooks
 				if (action >= 15 && action <= 18)
 				{
 					// vehicle temp action crash
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SettingOfTaskVehicleTempAction with invalid params from {}", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (TaskVehicleTempAction invalid) from {}", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 
 				if (Self::GetPed().GetNetworkObjectId() == entity)
 				{
 					// Ped takeover
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SettingOfTaskVehicleTempAction on our local ped from {}", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (Ped takeover) from {}", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 
 				Vehicle self_veh = Self::GetVehicle();
 				if (self_veh && self_veh.GetNetworkObjectId() == veh_id)
 				{
 					// Vehicle takeover
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SettingOfTaskVehicleTempAction on our local vehicle from {}", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (Vehicle takeover) from {}", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 			}
 			else if (type == CScriptEntityStateChangeEvent::Type::SetVehicleLockState)
@@ -257,8 +289,8 @@ namespace YimMenu::Hooks
 				Vehicle self_veh = Self::GetVehicle();
 				if (self_veh && self_veh.GetNetworkObjectId() == entity)
 				{
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SetVehicleLockState from {} on our local vehicle", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (SetVehicleLockState) from {} on our local vehicle", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 			}
 			else if (type == CScriptEntityStateChangeEvent::Type::SetVehicleExclusiveDriver)
@@ -267,22 +299,23 @@ namespace YimMenu::Hooks
 				if (self_veh && self_veh.GetNetworkObjectId() == entity)
 				{
 					// Vehicle kick
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SetVehicleExclusiveDriver from {} on our local vehicle", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (SetVehicleExclusiveDriver) from {} on our local vehicle", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 			}
 			else if (type == CScriptEntityStateChangeEvent::Type::SetPedFacialIdleAnimOverride)
 			{
 				if (Self::GetPed().GetNetworkObjectId() == entity)
 				{
-					LOGF(WARNING, "Blocked SCRIPT_ENTITY_STATE_CHANGE_EVENT of type SetPedFacialIdleAnimOverride from {} on our local player", player.GetName());
-					return false;
+					LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (SetPedFacialIdleAnimOverride) from {} on our local player", player.GetName());
+					return true; // NOLINT(readability-simplify-boolean-expr)
 				}
 			}
 			else if (type > CScriptEntityStateChangeEvent::Type::SetVehicleExclusiveDriver)
 			{
 				// invalid script entity change type crash
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) SCRIPT_ENTITY_STATE_CHANGE_EVENT (Invalid type) from {}", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -294,8 +327,8 @@ namespace YimMenu::Hooks
 
 			if (ScanPlaySoundEvent(event, player))
 			{
-				LOGF(WARNING, "Blocked NETWORK_PLAY_SOUND_EVENT from {} with IsEntity: {}, RefHash: {:X}, SoundHash: {:X}, SoundId: {}, ScriptHash: {:X}", player.GetName(), event.m_IsEntity, event.m_RefHash, event.m_SoundHash, event.m_SoundId, event.m_ScriptId.m_Hash);
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) NETWORK_PLAY_SOUND_EVENT from {} with IsEntity: {}, RefHash: {:X}, SoundHash: {:X}, SoundId: {}, ScriptHash: {:X}", player.GetName(), event.m_IsEntity, event.m_RefHash, event.m_SoundHash, event.m_SoundId, event.m_ScriptId.m_Hash);
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -314,8 +347,8 @@ namespace YimMenu::Hooks
 
 			if (cheaterPool->GetState())
 			{
-				LOGF(WARNING, "Blocked REPORT_MYSELF_EVENT from {} with type {} since we're in a cheater-only session", player.GetName(), event.m_0x30);
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) REPORT_MYSELF_EVENT from {} with type {} since we're in a cheater-only session", player.GetName(), event.m_0x30);
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -328,8 +361,8 @@ namespace YimMenu::Hooks
 			if (Self::GetPed().GetVehicleObjectId() == event.m_VehicleId && !Self::GetVehicle().IsRemote())
 			{
 				// Vehicle takeover
-				LOGF(WARNING, "Blocked ACTIVATE_VEHICLE_SPECIAL_ABILITY_EVENT on our local vehicle from {}", player.GetName());
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) ACTIVATE_VEHICLE_SPECIAL_ABILITY_EVENT on our local vehicle from {}", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
@@ -342,8 +375,8 @@ namespace YimMenu::Hooks
 			if (Self::GetPed().GetNetworkObjectId() == event.m_PedToRagdoll)
 			{
 				// is sometimes used legit, beware
-				LOGF(WARNING, "Blocked RAGDOLL_REQUEST_EVENT on our local ped from {}", player.GetName());
-				return false;
+				LOGF(INFO, "Allowed (previously blocked) RAGDOLL_REQUEST_EVENT on our local ped from {}", player.GetName());
+				return true; // NOLINT(readability-simplify-boolean-expr)
 			}
 
 			break;
